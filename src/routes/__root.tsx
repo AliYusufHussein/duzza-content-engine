@@ -30,14 +30,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ContentEngine Pro" },
+      { title: "Duzza Content Engine" },
       { name: "description", content: "One brief, one article, every platform — in one session." },
       { name: "author", content: "ContentEngine Pro" },
-      { property: "og:title", content: "ContentEngine Pro" },
+      { property: "og:title", content: "Duzza Content Engine" },
       { property: "og:description", content: "One brief, one article, every platform — in one session." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Duzza Content Engine" },
+      { name: "twitter:description", content: "One brief, one article, every platform — in one session." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0b28fa13-4557-44bb-b4ec-1ab575d4f071" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/0b28fa13-4557-44bb-b4ec-1ab575d4f071" },
     ],
     links: [
       {
