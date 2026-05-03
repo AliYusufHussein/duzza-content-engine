@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          article_paste: string
+          brief: Json
+          created_at: string
+          extraction: Json
+          id: string
+          outputs: Json
+          platforms_selected: string[]
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_paste?: string
+          brief?: Json
+          created_at?: string
+          extraction?: Json
+          id?: string
+          outputs?: Json
+          platforms_selected?: string[]
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_paste?: string
+          brief?: Json
+          created_at?: string
+          extraction?: Json
+          id?: string
+          outputs?: Json
+          platforms_selected?: string[]
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          gemini_api_key: string | null
+          id: string
+          preferred_model: string
+        }
+        Insert: {
+          created_at?: string
+          gemini_api_key?: string | null
+          id: string
+          preferred_model?: string
+        }
+        Update: {
+          created_at?: string
+          gemini_api_key?: string | null
+          id?: string
+          preferred_model?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
