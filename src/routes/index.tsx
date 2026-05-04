@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/AppHeader";
@@ -7,12 +8,10 @@ import { ProgressRail } from "@/components/ProgressRail";
 import { Stage1 } from "@/components/stages/Stage1";
 import { Stage2 } from "@/components/stages/Stage2";
 import { Stage3 } from "@/components/stages/Stage3";
-import { Stage4 } from "@/components/stages/Stage4";
-import { Stage5 } from "@/components/stages/Stage5";
 import { SettingsModal, getApiKey } from "@/components/SettingsModal";
 import { CampaignLibrary } from "@/components/CampaignLibrary";
-import { defaultBrief, PLATFORMS, type Brief, type Extraction } from "@/lib/campaign-types";
-import { buildBlogPrompt, buildExtractionPrompt, buildPlatformPrompt } from "@/lib/prompts";
+import { defaultBrief, type Brief, type Extraction } from "@/lib/campaign-types";
+import { buildBlogPrompt, buildExtractionPrompt } from "@/lib/prompts";
 import { callGeminiJSON } from "@/lib/gemini";
 
 export const Route = createFileRoute("/")({
@@ -33,7 +32,6 @@ function AppPage() {
   const [brief, setBrief] = useState<Brief>(defaultBrief());
   const [article, setArticle] = useState("");
   const [extraction, setExtraction] = useState<Extraction>({});
-  const [selected, setSelected] = useState<string[]>(PLATFORMS.filter((p) => p.defaultOn).map((p) => p.key));
   const [campaignId, setCampaignId] = useState<string | undefined>(undefined);
   const [autofilling, setAutofilling] = useState(false);
   const [extracting, setExtracting] = useState(false);
@@ -41,14 +39,13 @@ function AppPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [needKey, setNeedKey] = useState(false);
 
-  // Redirect if not signed in
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
 
-  // Debounced auto-save
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstRun = useRef(true);
   useEffect(() => {
@@ -62,9 +59,10 @@ function AppPage() {
         title: brief.topic || "Untitled",
         brief: brief as any,
         article_paste: article,
+        article: article,
         extraction: extraction as any,
         outputs: {} as any,
-        platforms_selected: selected,
+        platforms_selected: [],
         status: "draft",
       };
       if (campaignId) {
@@ -78,7 +76,7 @@ function AppPage() {
     }, 600);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brief, article, extraction, selected]);
+  }, [brief, article, extraction]);
 
   const ensureKey = async (): Promise<{ key: string; model: string } | null> => {
     if (!user) return null;
@@ -118,34 +116,67 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
     if (!data) return;
     setCampaignId(data.id);
     setBrief({ ...defaultBrief(), ...(data.brief as any) });
-    setArticle(data.article_paste || "");
+    setArticle((data as any).article || data.article_paste || "");
     setExtraction((data.extraction as any) || {});
-    setSelected(data.platforms_selected || []);
-    setStage(data.article_paste ? 5 : 1);
+    setStage(data.article_paste ? 3 : 1);
   };
 
-  const saveCampaign = async () => {
-    if (!user) return;
-    setSaving(true);
-    const outputs: Record<string, string> = { __blog: buildBlogPrompt(brief) };
-    selected.forEach((k) => {
-      const p = PLATFORMS.find((x) => x.key === k)!;
-      outputs[k] = buildPlatformPrompt(k, brief.platformSubs[k] || p.subs[0], brief, extraction);
-    });
+  const persistCampaign = async (status: "done" | "draft" = "done") => {
+    if (!user) return null;
     const payload = {
       user_id: user.id,
       title: brief.topic || "Untitled",
-      brief: brief as any, article_paste: article, extraction: extraction as any,
-      outputs: outputs as any, platforms_selected: selected, status: "complete",
+      brief: brief as any,
+      article_paste: article,
+      article: article,
+      extraction: extraction as any,
+      outputs: {} as any,
+      platforms_selected: [],
+      status,
     };
-    if (campaignId) await supabase.from("campaigns").update(payload).eq("id", campaignId);
-    else {
-      const { data } = await supabase.from("campaigns").insert(payload).select("id").single();
-      if (data) setCampaignId(data.id);
+    if (campaignId) {
+      await supabase.from("campaigns").update(payload).eq("id", campaignId);
+      return campaignId;
     }
-    setSaving(false);
-    setSaveStatus("saved");
-    setTimeout(() => setSaveStatus("idle"), 1800);
+    const { data } = await supabase.from("campaigns").insert(payload).select("id").single();
+    if (data) setCampaignId(data.id);
+    return data?.id ?? null;
+  };
+
+  const saveCampaign = async () => {
+    setSaving(true);
+    try {
+      await persistCampaign("done");
+      toast.success("Campaign saved ✓");
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 1800);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sendToPolisher = async () => {
+    setSending(true);
+    try {
+      const id = await persistCampaign("done");
+      const { error } = await supabase.functions.invoke("send-to-polisher", {
+        body: {
+          campaign_id: id,
+          article,
+          extraction,
+          title: brief.topic || "Untitled",
+          status: "ready_for_polishing",
+        },
+      });
+      if (error) throw error;
+      toast.success("Sent to Polisher ✓");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to send");
+    } finally {
+      setSending(false);
+    }
   };
 
   if (loading || !user) {
@@ -159,7 +190,7 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
         onOpenSettings={() => setShowSettings(true)}
         onOpenLibrary={() => setShowLibrary(true)}
       />
-      <ProgressRail current={stage} onJump={(n) => { if (n <= stage || (n === 2 && brief.topic) || (n === 3 && brief.topic) || (n <= 5 && Object.keys(extraction).length)) setStage(n); }} />
+      <ProgressRail current={stage} onJump={(n) => { if (n <= stage || (n === 2 && brief.topic) || (n === 3 && brief.topic)) setStage(n); }} />
 
       <main className="mx-auto max-w-4xl px-6 py-10">
         {needKey && (
@@ -178,16 +209,11 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
           <Stage3
             article={article} setArticle={setArticle}
             onExtract={onExtract} extracting={extracting} extraction={extraction}
-            onBack={() => setStage(2)} onNext={() => setStage(4)}
+            onBack={() => setStage(2)}
+            onSave={saveCampaign}
+            onSendToPolisher={sendToPolisher}
+            saving={saving} sending={sending}
           />
-        )}
-        {stage === 4 && (
-          <Stage4 brief={brief} setBrief={setBrief} selected={selected} setSelected={setSelected}
-            onBack={() => setStage(3)} onNext={() => setStage(5)} />
-        )}
-        {stage === 5 && (
-          <Stage5 brief={brief} extraction={extraction} selected={selected}
-            onBack={(n) => setStage(n)} onSave={saveCampaign} saving={saving} />
         )}
       </main>
 
