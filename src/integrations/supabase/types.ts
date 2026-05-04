@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       campaigns: {
         Row: {
+          article: string | null
           article_paste: string
           brief: Json
           created_at: string
@@ -29,6 +30,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          article?: string | null
           article_paste?: string
           brief?: Json
           created_at?: string
@@ -42,6 +44,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          article?: string | null
           article_paste?: string
           brief?: Json
           created_at?: string
@@ -55,6 +58,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      polisher_inbox: {
+        Row: {
+          article: string | null
+          campaign_id: string | null
+          created_at: string
+          extraction: Json | null
+          id: string
+          status: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          article?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          extraction?: Json | null
+          id?: string
+          status?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          article?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          extraction?: Json | null
+          id?: string
+          status?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polisher_inbox_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

@@ -4,8 +4,6 @@ const stages = [
   { n: 1, label: "Foundation" },
   { n: 2, label: "Blog Prompt" },
   { n: 3, label: "Extraction" },
-  { n: 4, label: "Platforms" },
-  { n: 5, label: "Outputs" },
 ];
 
 export function ProgressRail({ current, onJump }: { current: number; onJump?: (n: number) => void }) {

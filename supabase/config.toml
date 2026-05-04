@@ -1,1 +1,4 @@
 project_id = "kynddjygqhvyuezceihn"
+
+[functions.send-to-polisher]
+verify_jwt = false

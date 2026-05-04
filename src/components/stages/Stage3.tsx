@@ -1,12 +1,18 @@
 import type { Extraction } from "@/lib/campaign-types";
+import { Save, Send } from "lucide-react";
 
 export function Stage3({
-  article, setArticle, onExtract, extracting, extraction, onBack, onNext,
+  article, setArticle, onExtract, extracting, extraction,
+  onBack, onSave, onSendToPolisher, saving, sending,
 }: {
   article: string; setArticle: (s: string) => void;
   onExtract: () => void; extracting: boolean;
   extraction: Extraction | null;
-  onBack: () => void; onNext: () => void;
+  onBack: () => void;
+  onSave: () => void;
+  onSendToPolisher: () => void;
+  saving: boolean;
+  sending: boolean;
 }) {
   const labels: Record<string, string> = {
     headline: "Headline", hook: "Hook", tldr: "TL;DR",
@@ -18,13 +24,15 @@ export function Stage3({
     primary_keyword: "Primary keyword", authority_signal: "Authority", hook_stat: "Hook stat",
   };
 
+  const hasExtraction = extraction && Object.keys(extraction).length > 0;
+
   return (
     <div className="space-y-6">
       <div>
         <span className="ce-stage-tag">Stage 3</span>
         <h1 className="font-display text-5xl mt-3">Article <em className="italic text-[var(--accent)]">Extraction</em></h1>
         <p className="text-[var(--text-muted)] mt-2 max-w-3xl">
-          Paste your finished article below. The extraction engine will read it and pull out every element needed to power the platform prompts.
+          Paste your finished article below. The extraction engine will pull out every element — then save the campaign or send it straight to the Polisher.
         </p>
       </div>
 
@@ -37,13 +45,18 @@ export function Stage3({
           onChange={(e) => setArticle(e.target.value)}
         />
         {extracting && <div className="mt-3 text-[12px] font-mono-ui text-[var(--text-muted)] flex items-center gap-2"><span className="ce-spinner" /> Extracting key elements from your article…</div>}
+        <div className="mt-3">
+          <button className="ce-btn-secondary" onClick={onExtract} disabled={!article.trim() || extracting}>
+            {extracting ? <span className="ce-spinner" /> : null} Extract key elements
+          </button>
+        </div>
       </div>
 
-      {extraction && Object.keys(extraction).length > 0 && (
+      {hasExtraction && (
         <div className="ce-card">
           <div className="ce-card-title">Extracted elements</div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {Object.entries(extraction).filter(([k]) => labels[k]).map(([k, v]) => (
+            {Object.entries(extraction!).filter(([k]) => labels[k]).map(([k, v]) => (
               <div key={k} className="border border-[var(--border)] rounded-md p-3 bg-[var(--surface)]">
                 <div className="text-[10px] font-mono-ui uppercase tracking-wider text-[var(--text-faint)] mb-1">{labels[k]}</div>
                 <div className="text-[13px] text-[var(--text)] line-clamp-3">{v || <span className="text-[var(--text-faint)]">—</span>}</div>
@@ -53,15 +66,15 @@ export function Stage3({
         </div>
       )}
 
-      <div className="flex justify-between pt-2">
+      <div className="flex flex-wrap gap-2 justify-between pt-2">
         <button className="ce-btn-ghost" onClick={onBack}>← Back to prompt</button>
         <div className="flex gap-2">
-          <button className="ce-btn-secondary" onClick={onExtract} disabled={!article.trim() || extracting}>
-            {extracting ? <span className="ce-spinner" /> : null} Extract → Build Platform Prompts
+          <button className="ce-btn-secondary" onClick={onSave} disabled={saving || sending}>
+            {saving ? <span className="ce-spinner" /> : <Save size={14} />} Save campaign
           </button>
-          {extraction && Object.keys(extraction).length > 0 && (
-            <button className="ce-btn-primary" onClick={onNext}>Continue →</button>
-          )}
+          <button className="ce-btn-primary" onClick={onSendToPolisher} disabled={!article.trim() || saving || sending}>
+            {sending ? <span className="ce-spinner" /> : <Send size={14} />} Send to Polisher
+          </button>
         </div>
       </div>
     </div>
