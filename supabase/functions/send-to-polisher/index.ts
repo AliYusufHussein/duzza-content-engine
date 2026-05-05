@@ -12,16 +12,33 @@ Deno.serve(async (req) => {
   try {
     const { campaign_id, article, extraction, title, status } = await req.json();
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    // Local project client — used only to update this project's campaigns table.
+    const localUrl = Deno.env.get("SUPABASE_URL")!;
+    const localKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    if (campaign_id) {
-      await supabase.from("campaigns").update({ status: "done" }).eq("id", campaign_id);
+    // Polisher (duzza-blog) project client — used to insert into polisher_inbox.
+    const polisherUrl = Deno.env.get("POLISHER_SUPABASE_URL");
+    const polisherKey = Deno.env.get("POLISHER_SUPABASE_SERVICE_KEY");
+
+    if (!polisherUrl || !polisherKey) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error:
+            "Polisher project credentials not configured. Set POLISHER_SUPABASE_URL and POLISHER_SUPABASE_SERVICE_KEY.",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const { data, error } = await supabase
+    const local = createClient(localUrl, localKey);
+    const polisher = createClient(polisherUrl, polisherKey);
+
+    if (campaign_id) {
+      await local.from("campaigns").update({ status: "done" }).eq("id", campaign_id);
+    }
+
+    const { data, error } = await polisher
       .from("polisher_inbox")
       .insert({
         campaign_id: campaign_id ?? null,
