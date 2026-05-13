@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { campaign_id, article, extraction, title } = await req.json();
+    const { campaign_id, article, extraction, title, media } = await req.json();
 
     // Local project client — used only to update this project's campaigns table.
     const localUrl = Deno.env.get("SUPABASE_URL")!;
@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
           title,
           article,
           extraction,
+          media: Array.isArray(media) ? media : [],
         }),
       },
     );

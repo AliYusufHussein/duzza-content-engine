@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           extraction: Json
           id: string
+          media: Json
           outputs: Json
           platforms_selected: string[]
           status: string
@@ -36,6 +37,7 @@ export type Database = {
           created_at?: string
           extraction?: Json
           id?: string
+          media?: Json
           outputs?: Json
           platforms_selected?: string[]
           status?: string
@@ -50,6 +52,7 @@ export type Database = {
           created_at?: string
           extraction?: Json
           id?: string
+          media?: Json
           outputs?: Json
           platforms_selected?: string[]
           status?: string

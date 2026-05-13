@@ -4,6 +4,7 @@ const stages = [
   { n: 1, label: "Foundation" },
   { n: 2, label: "Blog Prompt" },
   { n: 3, label: "Extraction" },
+  { n: 4, label: "Media", optional: true },
 ];
 
 export function ProgressRail({ current, onJump }: { current: number; onJump?: (n: number) => void }) {
@@ -25,13 +26,15 @@ export function ProgressRail({ current, onJump }: { current: number; onJump?: (n
                       ? "bg-[var(--accent)] text-[#0d0d0d] font-bold"
                       : done
                       ? "bg-[var(--border-hi)] text-[var(--text)]"
+                      : s.optional
+                      ? "border border-dashed border-[var(--border-hi)] text-[var(--text-faint)]"
                       : "border border-[var(--border-hi)] text-[var(--text-faint)]"
                   }`}
                 >
                   {done ? <Check size={14} /> : s.n}
                 </span>
                 <span className={`text-[11px] font-mono-ui uppercase tracking-wider ${active ? "text-[var(--accent)]" : "text-[var(--text-muted)]"} hidden sm:inline`}>
-                  {s.label}
+                  {s.label}{s.optional ? " ·opt" : ""}
                 </span>
               </button>
               {i < stages.length - 1 && <div className="flex-1 h-px bg-[var(--border)]" />}
