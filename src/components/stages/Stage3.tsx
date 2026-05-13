@@ -1,9 +1,9 @@
 import type { Extraction } from "@/lib/campaign-types";
-import { Save, Send } from "lucide-react";
+import { Save, Send, Sparkles } from "lucide-react";
 
 export function Stage3({
   article, setArticle, onExtract, extracting, extraction,
-  onBack, onSave, onSendToPolisher, saving, sending,
+  onBack, onSave, onSendToPolisher, onGenerateMedia, saving, sending,
 }: {
   article: string; setArticle: (s: string) => void;
   onExtract: () => void; extracting: boolean;
@@ -11,6 +11,7 @@ export function Stage3({
   onBack: () => void;
   onSave: () => void;
   onSendToPolisher: () => void;
+  onGenerateMedia: () => void;
   saving: boolean;
   sending: boolean;
 }) {
@@ -68,9 +69,17 @@ export function Stage3({
 
       <div className="flex flex-wrap gap-2 justify-between pt-2">
         <button className="ce-btn-ghost" onClick={onBack}>← Back to prompt</button>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button className="ce-btn-secondary" onClick={onSave} disabled={saving || sending}>
             {saving ? <span className="ce-spinner" /> : <Save size={14} />} Save campaign
+          </button>
+          <button
+            className="ce-btn-secondary"
+            onClick={onGenerateMedia}
+            disabled={!hasExtraction || saving || sending}
+            title={hasExtraction ? "Optional: generate images for this campaign" : "Run extraction first"}
+          >
+            <Sparkles size={14} /> Generate media
           </button>
           <button className="ce-btn-primary" onClick={onSendToPolisher} disabled={!article.trim() || saving || sending}>
             {sending ? <span className="ce-spinner" /> : <Send size={14} />} Send to Polisher
