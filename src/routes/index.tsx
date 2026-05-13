@@ -65,6 +65,7 @@ function AppPage() {
         extraction: extraction as any,
         outputs: {} as any,
         platforms_selected: [],
+        media: media as any,
         status: "draft",
       };
       if (campaignId) {
@@ -78,7 +79,7 @@ function AppPage() {
     }, 600);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brief, article, extraction]);
+  }, [brief, article, extraction, media]);
 
   const ensureKey = async (): Promise<{ key: string; model: string } | null> => {
     if (!user) return null;
