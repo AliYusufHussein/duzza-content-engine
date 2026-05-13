@@ -121,6 +121,7 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
     setBrief({ ...defaultBrief(), ...(data.brief as any) });
     setArticle((data as any).article || data.article_paste || "");
     setExtraction((data.extraction as any) || {});
+    setMedia(Array.isArray((data as any).media) ? (data as any).media : []);
     setStage(data.article_paste ? 3 : 1);
   };
 
@@ -135,6 +136,7 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
       extraction: extraction as any,
       outputs: {} as any,
       platforms_selected: [],
+      media: media as any,
       status,
     };
     if (campaignId) {
@@ -164,6 +166,7 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
     setSending(true);
     try {
       const id = await persistCampaign("done");
+      const selectedMedia = media.filter((m) => m.selected).map((m) => ({ slot: m.slot, url: m.url, prompt: m.prompt }));
       const { error } = await supabase.functions.invoke("send-to-polisher", {
         body: {
           campaign_id: id,
@@ -171,10 +174,11 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
           extraction,
           title: brief.topic || "Untitled",
           status: "ready_for_polishing",
+          media: selectedMedia,
         },
       });
       if (error) throw error;
-      toast.success("Sent to Polisher ✓");
+      toast.success(`Sent to Polisher ✓${selectedMedia.length ? ` (with ${selectedMedia.length} media)` : ""}`);
     } catch (e: any) {
       toast.error(e.message || "Failed to send");
     } finally {
@@ -193,7 +197,12 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
         onOpenSettings={() => setShowSettings(true)}
         onOpenLibrary={() => setShowLibrary(true)}
       />
-      <ProgressRail current={stage} onJump={(n) => { if (n <= stage || (n === 2 && brief.topic) || (n === 3 && brief.topic)) setStage(n); }} />
+      <ProgressRail current={stage} onJump={(n) => {
+        if (n <= stage) return setStage(n);
+        if (n === 2 && brief.topic) return setStage(2);
+        if (n === 3 && brief.topic) return setStage(3);
+        if (n === 4 && Object.keys(extraction).length > 0) return setStage(4);
+      }} />
 
       <main className="mx-auto max-w-4xl px-6 py-10">
         {needKey && (
@@ -213,6 +222,20 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
             article={article} setArticle={setArticle}
             onExtract={onExtract} extracting={extracting} extraction={extraction}
             onBack={() => setStage(2)}
+            onSave={saveCampaign}
+            onSendToPolisher={sendToPolisher}
+            onGenerateMedia={() => setStage(4)}
+            saving={saving} sending={sending}
+          />
+        )}
+        {stage === 4 && (
+          <Stage4
+            extraction={extraction}
+            userId={user.id}
+            campaignId={campaignId}
+            media={media}
+            setMedia={setMedia}
+            onBack={() => setStage(3)}
             onSave={saveCampaign}
             onSendToPolisher={sendToPolisher}
             saving={saving} sending={sending}
