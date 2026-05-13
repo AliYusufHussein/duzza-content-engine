@@ -8,6 +8,7 @@ import { ProgressRail } from "@/components/ProgressRail";
 import { Stage1 } from "@/components/stages/Stage1";
 import { Stage2 } from "@/components/stages/Stage2";
 import { Stage3 } from "@/components/stages/Stage3";
+import { Stage4, type MediaItem } from "@/components/stages/Stage4";
 import { SettingsModal, getApiKey } from "@/components/SettingsModal";
 import { CampaignLibrary } from "@/components/CampaignLibrary";
 import { defaultBrief, type Brief, type Extraction } from "@/lib/campaign-types";
@@ -32,6 +33,7 @@ function AppPage() {
   const [brief, setBrief] = useState<Brief>(defaultBrief());
   const [article, setArticle] = useState("");
   const [extraction, setExtraction] = useState<Extraction>({});
+  const [media, setMedia] = useState<MediaItem[]>([]);
   const [campaignId, setCampaignId] = useState<string | undefined>(undefined);
   const [autofilling, setAutofilling] = useState(false);
   const [extracting, setExtracting] = useState(false);
