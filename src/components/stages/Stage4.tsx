@@ -54,6 +54,8 @@ export function Stage4({
   onSendToPolisher,
   saving,
   sending,
+  sent,
+  onNewCampaign,
 }: {
   extraction: Extraction;
   userId: string;
@@ -65,6 +67,8 @@ export function Stage4({
   onSendToPolisher: () => void;
   saving: boolean;
   sending: boolean;
+  sent: boolean;
+  onNewCampaign: () => void;
 }) {
   const [prompts, setPrompts] = useState(() => defaultPrompts(extraction));
   const [busy, setBusy] = useState<Record<string, boolean>>({});
