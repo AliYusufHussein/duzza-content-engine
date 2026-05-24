@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image as ImageIcon, RefreshCw, Save, Send, Trash2, Check } from "lucide-react";
+import { Image as ImageIcon, RefreshCw, Save, Send, Trash2, Check, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Extraction } from "@/lib/campaign-types";
 import { toast } from "sonner";
