@@ -39,6 +39,20 @@ export function Stage3({
         </p>
       </div>
 
+      {sent && (
+        <div className="ce-card border-[var(--accent)]">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-[13px] font-semibold text-[var(--accent)]">Sent to Polisher ✓</div>
+              <div className="text-[11px] text-[var(--text-muted)] mt-0.5">Your campaign has been delivered. Start fresh whenever you are ready.</div>
+            </div>
+            <button className="ce-btn-primary" onClick={onNewCampaign}>
+              <Plus size={14} /> New campaign
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="ce-card">
         <div className="ce-card-title">Paste your article</div>
         <textarea
