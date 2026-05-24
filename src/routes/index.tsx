@@ -239,6 +239,8 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
             onSendToPolisher={sendToPolisher}
             onGenerateMedia={() => setStage(4)}
             saving={saving} sending={sending}
+            sent={sent}
+            onNewCampaign={startNewCampaign}
           />
         )}
         {stage === 4 && (
