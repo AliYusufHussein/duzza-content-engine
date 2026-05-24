@@ -149,6 +149,17 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
     return data?.id ?? null;
   };
 
+  const startNewCampaign = () => {
+    setStage(1);
+    setBrief(defaultBrief());
+    setArticle("");
+    setExtraction({});
+    setMedia([]);
+    setCampaignId(undefined);
+    setSent(false);
+    setSaveStatus("idle");
+  };
+
   const saveCampaign = async () => {
     setSaving(true);
     try {
