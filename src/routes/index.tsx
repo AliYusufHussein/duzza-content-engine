@@ -190,6 +190,7 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
         },
       });
       if (error) throw error;
+      setSent(true);
       toast.success(`Sent to Polisher ✓${selectedMedia.length ? ` (with ${selectedMedia.length} media)` : ""}`);
     } catch (e: any) {
       toast.error(e.message || "Failed to send");
