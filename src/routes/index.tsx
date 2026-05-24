@@ -254,6 +254,8 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
             onSave={saveCampaign}
             onSendToPolisher={sendToPolisher}
             saving={saving} sending={sending}
+            sent={sent}
+            onNewCampaign={startNewCampaign}
           />
         )}
       </main>
