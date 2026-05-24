@@ -42,6 +42,7 @@ function AppPage() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
   const [needKey, setNeedKey] = useState(false);
 
   useEffect(() => {
@@ -148,6 +149,17 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
     return data?.id ?? null;
   };
 
+  const startNewCampaign = () => {
+    setStage(1);
+    setBrief(defaultBrief());
+    setArticle("");
+    setExtraction({});
+    setMedia([]);
+    setCampaignId(undefined);
+    setSent(false);
+    setSaveStatus("idle");
+  };
+
   const saveCampaign = async () => {
     setSaving(true);
     try {
@@ -178,6 +190,7 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
         },
       });
       if (error) throw error;
+      setSent(true);
       toast.success(`Sent to Polisher ✓${selectedMedia.length ? ` (with ${selectedMedia.length} media)` : ""}`);
     } catch (e: any) {
       toast.error(e.message || "Failed to send");
@@ -226,6 +239,8 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
             onSendToPolisher={sendToPolisher}
             onGenerateMedia={() => setStage(4)}
             saving={saving} sending={sending}
+            sent={sent}
+            onNewCampaign={startNewCampaign}
           />
         )}
         {stage === 4 && (
@@ -239,6 +254,8 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
             onSave={saveCampaign}
             onSendToPolisher={sendToPolisher}
             saving={saving} sending={sending}
+            sent={sent}
+            onNewCampaign={startNewCampaign}
           />
         )}
       </main>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image as ImageIcon, RefreshCw, Save, Send, Trash2, Check } from "lucide-react";
+import { Image as ImageIcon, RefreshCw, Save, Send, Trash2, Check, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Extraction } from "@/lib/campaign-types";
 import { toast } from "sonner";
@@ -54,6 +54,8 @@ export function Stage4({
   onSendToPolisher,
   saving,
   sending,
+  sent,
+  onNewCampaign,
 }: {
   extraction: Extraction;
   userId: string;
@@ -65,6 +67,8 @@ export function Stage4({
   onSendToPolisher: () => void;
   saving: boolean;
   sending: boolean;
+  sent: boolean;
+  onNewCampaign: () => void;
 }) {
   const [prompts, setPrompts] = useState(() => defaultPrompts(extraction));
   const [busy, setBusy] = useState<Record<string, boolean>>({});
@@ -113,6 +117,20 @@ export function Stage4({
           Generate images for your campaign using the extracted content. Edit any prompt, regenerate as many times as you want, then pick which assets to send to Polisher.
         </p>
       </div>
+
+      {sent && (
+        <div className="ce-card border-[var(--accent)]">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-[13px] font-semibold text-[var(--accent)]">Sent to Polisher ✓</div>
+              <div className="text-[11px] text-[var(--text-muted)] mt-0.5">Your campaign has been delivered. Start fresh whenever you are ready.</div>
+            </div>
+            <button className="ce-btn-primary" onClick={onNewCampaign}>
+              <Plus size={14} /> New campaign
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4">
         {prompts.map((p) => (

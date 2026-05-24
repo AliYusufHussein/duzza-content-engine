@@ -1,9 +1,9 @@
 import type { Extraction } from "@/lib/campaign-types";
-import { Save, Send, Sparkles } from "lucide-react";
+import { Save, Send, Sparkles, Plus } from "lucide-react";
 
 export function Stage3({
   article, setArticle, onExtract, extracting, extraction,
-  onBack, onSave, onSendToPolisher, onGenerateMedia, saving, sending,
+  onBack, onSave, onSendToPolisher, onGenerateMedia, saving, sending, sent, onNewCampaign,
 }: {
   article: string; setArticle: (s: string) => void;
   onExtract: () => void; extracting: boolean;
@@ -14,6 +14,8 @@ export function Stage3({
   onGenerateMedia: () => void;
   saving: boolean;
   sending: boolean;
+  sent: boolean;
+  onNewCampaign: () => void;
 }) {
   const labels: Record<string, string> = {
     headline: "Headline", hook: "Hook", tldr: "TL;DR",
@@ -36,6 +38,20 @@ export function Stage3({
           Paste your finished article below. The extraction engine will pull out every element — then save the campaign or send it straight to the Polisher.
         </p>
       </div>
+
+      {sent && (
+        <div className="ce-card border-[var(--accent)]">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-[13px] font-semibold text-[var(--accent)]">Sent to Polisher ✓</div>
+              <div className="text-[11px] text-[var(--text-muted)] mt-0.5">Your campaign has been delivered. Start fresh whenever you are ready.</div>
+            </div>
+            <button className="ce-btn-primary" onClick={onNewCampaign}>
+              <Plus size={14} /> New campaign
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="ce-card">
         <div className="ce-card-title">Paste your article</div>
