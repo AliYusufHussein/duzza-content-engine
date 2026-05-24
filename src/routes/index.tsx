@@ -42,6 +42,7 @@ function AppPage() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
   const [needKey, setNeedKey] = useState(false);
 
   useEffect(() => {
