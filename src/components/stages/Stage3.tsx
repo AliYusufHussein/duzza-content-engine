@@ -1,9 +1,9 @@
 import type { Extraction } from "@/lib/campaign-types";
-import { Save, Send, Sparkles } from "lucide-react";
+import { Save, Send, Sparkles, Plus } from "lucide-react";
 
 export function Stage3({
   article, setArticle, onExtract, extracting, extraction,
-  onBack, onSave, onSendToPolisher, onGenerateMedia, saving, sending,
+  onBack, onSave, onSendToPolisher, onGenerateMedia, saving, sending, sent, onNewCampaign,
 }: {
   article: string; setArticle: (s: string) => void;
   onExtract: () => void; extracting: boolean;
@@ -14,6 +14,8 @@ export function Stage3({
   onGenerateMedia: () => void;
   saving: boolean;
   sending: boolean;
+  sent: boolean;
+  onNewCampaign: () => void;
 }) {
   const labels: Record<string, string> = {
     headline: "Headline", hook: "Hook", tldr: "TL;DR",
