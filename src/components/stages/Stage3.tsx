@@ -29,6 +29,22 @@ export function Stage3({
 
   const hasExtraction = extraction && Object.keys(extraction).length > 0;
 
+  const handleDownload = () => {
+    if (!extraction) return;
+    const lines = Object.entries(extraction)
+      .filter(([k]) => labels[k])
+      .map(([k, v]) => `${labels[k]}: ${v || ""}`);
+    const blob = new Blob([lines.join("\n\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "extraction.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div>
