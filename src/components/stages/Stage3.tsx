@@ -87,7 +87,12 @@ export function Stage3({
 
       {hasExtraction && (
         <div className="ce-card">
-          <div className="ce-card-title">Extracted elements</div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="ce-card-title">Extracted elements</div>
+            <button className="ce-btn-accent-outline" onClick={handleDownload}>
+              <Download size={12} /> Download
+            </button>
+          </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {Object.entries(extraction!).filter(([k]) => labels[k]).map(([k, v]) => (
               <div key={k} className="border border-[var(--border)] rounded-md p-3 bg-[var(--surface)]">
