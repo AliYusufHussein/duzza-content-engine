@@ -1,5 +1,5 @@
 import type { Extraction } from "@/lib/campaign-types";
-import { Save, Send, Sparkles, Plus } from "lucide-react";
+import { Save, Send, Sparkles, Plus, Download } from "lucide-react";
 
 export function Stage3({
   article, setArticle, onExtract, extracting, extraction,
@@ -28,6 +28,22 @@ export function Stage3({
   };
 
   const hasExtraction = extraction && Object.keys(extraction).length > 0;
+
+  const handleDownload = () => {
+    if (!extraction) return;
+    const lines = Object.entries(extraction)
+      .filter(([k]) => labels[k])
+      .map(([k, v]) => `${labels[k]}: ${v || ""}`);
+    const blob = new Blob([lines.join("\n\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "extraction.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
@@ -71,7 +87,12 @@ export function Stage3({
 
       {hasExtraction && (
         <div className="ce-card">
-          <div className="ce-card-title">Extracted elements</div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="ce-card-title">Extracted elements</div>
+            <button className="ce-btn-accent-outline" onClick={handleDownload}>
+              <Download size={12} /> Download
+            </button>
+          </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {Object.entries(extraction!).filter(([k]) => labels[k]).map(([k, v]) => (
               <div key={k} className="border border-[var(--border)] rounded-md p-3 bg-[var(--surface)]">
