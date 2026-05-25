@@ -1,5 +1,5 @@
 import type { Extraction } from "@/lib/campaign-types";
-import { Save, Send, Sparkles, Plus } from "lucide-react";
+import { Save, Send, Sparkles, Plus, Download } from "lucide-react";
 
 export function Stage3({
   article, setArticle, onExtract, extracting, extraction,
