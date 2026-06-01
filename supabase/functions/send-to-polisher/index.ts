@@ -10,21 +10,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const polisherUrl = Deno.env.get("POLISHER_SUPABASE_URL");
-    const polisherKey = Deno.env.get("POLISHER_SUPABASE_SERVICE_KEY");
-
-    if (!polisherUrl || !polisherKey) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error:
-            "Polisher project credentials not configured. Set POLISHER_SUPABASE_URL and POLISHER_SUPABASE_SERVICE_KEY.",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const { campaign_id, article, extraction, title, status } = await req.json();
+    const { campaign_id, article, extraction, title, media } = await req.json();
 
     // LOCAL CLIENT — update this project's campaigns table.
     const localUrl = Deno.env.get("SUPABASE_URL")!;
@@ -35,25 +21,29 @@ Deno.serve(async (req) => {
       await local.from("campaigns").update({ status: "done" }).eq("id", campaign_id);
     }
 
-    // POLISHER CLIENT — insert into the Polisher project's inbox.
-    const polisher = createClient(polisherUrl, polisherKey);
+    const fetchPromise = fetch(
+      "https://hckpfuipklzyzhkmicuz.supabase.co/functions/v1/receive-from-generator",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          secret: "duzza_polisher_secret_2026",
+          campaign_id,
+          title,
+          article,
+          extraction,
+          media: Array.isArray(media) ? media : [],
+        }),
+      },
+    );
 
-    const { data, error } = await polisher
-      .from("polisher_inbox")
-      .insert({
-        campaign_id,
-        title,
-        article,
-        extraction: extraction ?? {},
-        status: status ?? "ready_for_polishing",
-      })
-      .select("id")
-      .single();
-
-    if (error) throw new Error(error.message);
+    // Fire and forget — don't await, return immediately
+    if (typeof (globalThis as any).EdgeRuntime !== "undefined") {
+      (globalThis as any).EdgeRuntime.waitUntil(fetchPromise);
+    }
 
     return new Response(
-      JSON.stringify({ success: true, inbox_id: data?.id ?? null }),
+      JSON.stringify({ success: true, inbox_id: null }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
