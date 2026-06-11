@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Brief } from "@/lib/campaign-types";
 import { Sparkles } from "lucide-react";
+import { scheduler } from "@/integrations/scheduler/client";
 
 const TONES = ["Authoritative", "Conversational", "Educational", "Data-driven", "Storytelling", "Contrarian"];
 const FW = ["3-Pillar system", "Step-by-step", "Loop / cycle", "Matrix / scoring", "Before / after"];
@@ -19,6 +20,9 @@ export function Stage1({
   autofilling: boolean;
 }) {
   const [filled, setFilled] = useState(false);
+  const [channels, setChannels] = useState<{ id: string; brand: string }[]>([]);
+  const [toneLoading, setToneLoading] = useState(false);
+  const [toneMissing, setToneMissing] = useState(false);
   const set = (k: keyof Brief, v: any) => setBrief({ ...brief, [k]: v });
   const toggleArr = (k: "extras", v: string) => {
     const cur = brief[k];
@@ -30,6 +34,42 @@ export function Stage1({
     setTimeout(() => setFilled(false), 4000);
   };
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await scheduler.from("channels").select("id, brand");
+      if (!data) return;
+      const seen = new Set<string>();
+      const dedup: { id: string; brand: string }[] = [];
+      for (const r of data as any[]) {
+        const b = r.brand ?? r.name ?? "";
+        if (!b || seen.has(b)) continue;
+        seen.add(b);
+        dedup.push({ id: r.id, brand: b });
+      }
+      setChannels(dedup);
+    })();
+  }, []);
+
+  const onChannelChange = async (channelId: string) => {
+    const ch = channels.find((c) => c.id === channelId);
+    if (!ch) {
+      setBrief({ ...brief, channel: "", toneProfile: null });
+      setToneMissing(false);
+      return;
+    }
+    setToneLoading(true);
+    setToneMissing(false);
+    const { data } = await scheduler
+      .from("tone_profiles")
+      .select("*")
+      .eq("channel_id", channelId)
+      .maybeSingle();
+    setToneLoading(false);
+    if (!data) setToneMissing(true);
+    setBrief({ ...brief, channel: ch.brand, toneProfile: data ?? null });
+  };
+
+
   return (
     <div className="space-y-6">
       <div>
@@ -39,6 +79,60 @@ export function Stage1({
           Define the content brief. Enter your topic and use Auto-fill to populate fields, then review and adjust everything before proceeding.
         </p>
       </div>
+
+      <div className="ce-card">
+        <div className="ce-card-title">Channel</div>
+        <label className="ce-label">Channel</label>
+        <select
+          className="ce-input"
+          value={channels.find((c) => c.brand === brief.channel)?.id ?? ""}
+          onChange={(e) => onChannelChange(e.target.value)}
+        >
+          <option value="">Select a channel...</option>
+          {channels.map((c) => (
+            <option key={c.id} value={c.id}>{c.brand}</option>
+          ))}
+        </select>
+
+        {brief.channel && (
+          <div className="mt-4">
+            <label className="ce-label">Tone</label>
+            {toneLoading ? (
+              <div className="text-[12px] font-mono-ui text-[var(--text-muted)] flex items-center gap-2">
+                <span className="ce-spinner" /> Loading tone profile…
+              </div>
+            ) : toneMissing || !brief.toneProfile ? (
+              <div className="text-[12px] font-mono-ui text-[var(--text-muted)]">No tone profile set</div>
+            ) : (
+              <div className="space-y-3 p-3 rounded border border-[var(--border)] bg-[var(--surface)]">
+                {brief.toneProfile.brand_voice && (
+                  <div>
+                    <div className="ce-label">Brand voice</div>
+                    <div className="text-sm">{brief.toneProfile.brand_voice}</div>
+                  </div>
+                )}
+                {Array.isArray(brief.toneProfile.tone_keywords) && brief.toneProfile.tone_keywords.length > 0 && (
+                  <div>
+                    <div className="ce-label">Tone keywords</div>
+                    <div className="flex flex-wrap gap-2">
+                      {brief.toneProfile.tone_keywords.map((k: string) => (
+                        <span key={k} className="ce-chip on">{k}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {brief.toneProfile.sample_line && (
+                  <div>
+                    <div className="ce-label">Sample line</div>
+                    <div className="text-sm italic">"{brief.toneProfile.sample_line}"</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
 
       <div className="ce-card">
         <div className="ce-card-title">Start here</div>
