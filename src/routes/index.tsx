@@ -104,12 +104,24 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
     finally { setAutofilling(false); }
   };
 
+  const stripMetadata = (raw: string): string => {
+    const patterns = [
+      /word count:/i, /checklist sign-off/i, /headline options/i, /meta description:/i,
+      /url slug:/i, /social hooks/i, /completion report/i, /cta confirmed/i, /message angle/i,
+    ];
+    return raw
+      .split("\n")
+      .filter((line) => !patterns.some((p) => p.test(line)))
+      .join("\n");
+  };
+
   const onExtract = async () => {
     const cred = await ensureKey();
     if (!cred) return;
     setExtracting(true);
     try {
-      const j = await callGeminiJSON(cred.key, cred.model, buildExtractionPrompt(article), 2500);
+      const cleaned = stripMetadata(article);
+      const j = await callGeminiJSON(cred.key, cred.model, buildExtractionPrompt(cleaned, brief.fwstyle), 2500);
       setExtraction(j);
     } catch (e: any) { alert(e.message); }
     finally { setExtracting(false); }
