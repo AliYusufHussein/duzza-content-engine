@@ -1,4 +1,6 @@
 export type Brief = {
+  channel?: string;
+  toneProfile?: any;
   topic: string;
   audience: string;
   niche: string;
@@ -32,6 +34,8 @@ export type Brief = {
 export type Extraction = Record<string, string>;
 
 export const defaultBrief = (): Brief => ({
+  channel: "",
+  toneProfile: null,
   topic: "", audience: "", niche: "", problem: "", solution: "", stat: "", authority: "",
   wordcount: "1,500–2,000", format: "how-to guide", tone: "Authoritative", fwstyle: "3-Pillar system",
   kw1: "", kw2: "", slug: "", meta: "",
