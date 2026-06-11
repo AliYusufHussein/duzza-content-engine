@@ -1,8 +1,64 @@
 import type { Brief, Extraction } from "./campaign-types";
 
+function frameworkStructure(fw: string, b: Brief): string {
+  switch (fw) {
+    case "Step-by-step":
+      return `STEP-BY-STEP STRUCTURE — REQUIRED
+- Write the article as a numbered sequence of steps (MINIMUM 5).
+- For each step: a clear title, a 2–4 sentence explanation, and ONE common mistake readers make at that step.
+- Include a dedicated "Tools & Resources" section listing tools/resources used.
+- Cover ${b.solution} broken down across these steps.`;
+    case "Loop / cycle":
+      return `LOOP / CYCLE STRUCTURE — REQUIRED
+- Frame the article as a named loop/cycle with named phases (3–5) that connect back to the start.
+- Identify the TRIGGER that begins the loop.
+- For each phase: a name, what happens, and the concrete OUTPUT of that phase.
+- Show how the final phase feeds the trigger again.
+- The loop should solve: ${b.problem} via ${b.solution}.`;
+    case "Matrix / scoring":
+      return `MATRIX / SCORING STRUCTURE — REQUIRED
+- Build a named matrix with named CRITERIA (3–5).
+- Define a clear scoring or evaluation mechanism (e.g. 1–5 per criterion).
+- Define RESULT TIERS that scores map to with what each tier means.
+- Apply the matrix to ${b.solution} so the reader can self-evaluate.`;
+    case "Before / after":
+      return `BEFORE / AFTER STRUCTURE — REQUIRED
+- BEFORE state: vividly describe the starting condition tied to ${b.problem}.
+- TURNING POINT: the specific moment / decision / insight that changed things.
+- AFTER state: the resulting state with MEASURABLE proof (numbers, outcomes).
+- REPLICATION: a clear section showing how the reader can replicate the transformation.`;
+    case "3-Pillar system":
+    default:
+      return `3-PILLAR STRUCTURE — REQUIRED
+- Introduce exactly 3 named PILLARS that together form "${b.solution}".
+- For each pillar: a name, a 2–4 sentence explanation, and ONE concrete action step.
+- Include a CASE STUDY showing measurable outcome from applying the 3 pillars.`;
+  }
+}
+
+function toneBlock(b: Brief): string {
+  if (!b.toneProfile && !b.channel && !b.content_goal) return "";
+  const tp = b.toneProfile || {};
+  const keywords = Array.isArray(tp.tone_keywords) ? tp.tone_keywords.join(", ") : "";
+  return `CHANNEL TONE PROFILE:
+Brand: ${b.channel || ""}
+Voice: ${tp.brand_voice || ""}
+Tone: ${keywords}
+Audience: ${tp.audience || b.audience || ""}
+Avoid: ${tp.avoid || ""}
+Sample line: ${tp.sample_line || ""}
+Content Goal: ${b.content_goal || ""}
+
+Write the entire article in this voice. Do not break character.
+
+`;
+}
+
 export function buildBlogPrompt(b: Brief): string {
   const extras = b.extras.length ? `\nALSO GENERATE:\n${b.extras.map(e => `- ${e}`).join("\n")}` : "";
-  return `You are an expert blog writer and SEO strategist.
+  const tone = toneBlock(b);
+  const fwBlock = frameworkStructure(b.fwstyle, b);
+  return `${tone}You are an expert blog writer and SEO strategist.
 
 CONTENT BRIEF
 Topic: ${b.topic}
@@ -17,6 +73,8 @@ Secondary keywords: ${b.kw2}
 URL slug: ${b.slug}
 Tone: ${b.tone}
 Format: ${b.format}
+Framework: ${b.fwstyle}
+Content goal: ${b.content_goal || "(unspecified)"}
 Word count: ${b.wordcount}
 ${b.context ? `Additional context: ${b.context}` : ""}
 
@@ -29,22 +87,26 @@ Before writing, state:
 Then write a complete, publish-ready ${b.wordcount} word ${b.format} satisfying every requirement below.
 
 ══════════════════════════════════════
-ARTICLE STRUCTURE (13 SECTIONS — ALL REQUIRED)
+ARTICLE STRUCTURE
 ══════════════════════════════════════
 
 1. HEADLINE — Specific, benefit-driven, contains primary keyword. Write 3 options + recommend strongest.
 2. OPENING HOOK (2–4 sentences) — Start with: ${b.stat}. Make reader feel understood.
 3. TL;DR — 3 bold sentences summarising core value.
 4. BRIEF INTRO (2–3 sentences) — Primary keyword appears naturally.
-5. SECTION 1 — THE PROBLEM. Define: ${b.problem}. Authority: "${b.authority}". 📸 IMAGE: ${b.img1}
-6. SECTION 2 — THE NAMED FRAMEWORK. Style: ${b.fwstyle}. Solution: ${b.solution}. 📊 DIAGRAM: ${b.img2}
-7. SECTION 3 — THE 3 PILLARS. Break framework into exactly 3 named pillars. 🎨 INFOGRAPHIC: ${b.img3}
-8. SECTION 4 — ACTION STEPS. 3 concrete steps + screenshot. 📷 SCREENSHOT: ${b.img4}
-9. SECTION 5 — CASE STUDY. Industry-specific example with measurable outcome.
-10. SECTION 6 — RESULT VISUAL. 📈 VISUAL: ${b.img6}
-11. SECTION 7 — FAQ (3–5 Q&A addressing objections).
-12. SECTION 8 — KEY TAKEAWAYS (bulleted recap).
-13. CTA — One and only one clear call to action.
+
+${fwBlock}
+
+5. FAQ (3–5 Q&A addressing objections).
+6. KEY TAKEAWAYS (bulleted recap).
+7. CTA — One and only one clear call to action.
+
+Visual placements you should reference where natural:
+- Problem image: ${b.img1}
+- Framework diagram: ${b.img2}
+- Pillars / phases infographic: ${b.img3}
+- Action screenshot: ${b.img4}
+- Result visual: ${b.img6}
 
 ══════════════════════════════════════
 AFTER THE ARTICLE — COMPLETION REPORT
@@ -52,33 +114,61 @@ AFTER THE ARTICLE — COMPLETION REPORT
 PRIMARY KEYWORD / SECONDARY KEYWORDS / META DESCRIPTION / URL SLUG / CHECKLIST SIGN-OFF.${extras}`;
 }
 
-export function buildExtractionPrompt(article: string): string {
-  return `You are a content extraction engine. Read the article below and extract the following elements.
-
-Return ONLY a valid JSON object with no markdown, no preamble, no explanation.
-
-Extract these exact keys:
-{
-  "headline": "the final chosen headline from the article",
-  "hook": "the opening 1-2 hook sentences",
-  "tldr": "the TL;DR block verbatim or summarised",
-  "framework_name": "the named framework or method",
-  "framework_analogy": "the real-world analogy used",
-  "pillar_1": "label and one-sentence summary of Pillar 1",
-  "pillar_2": "label and one-sentence summary of Pillar 2",
-  "pillar_3": "label and one-sentence summary of Pillar 3",
-  "action_step_1": "first action step",
-  "action_step_2": "second action step",
-  "action_step_3": "third action step",
-  "case_study_industry": "industry or context of main example",
-  "case_study_outcome": "specific result or outcome",
-  "faq_1": "first FAQ Q+A",
-  "faq_2": "second FAQ Q+A",
-  "cta": "the call to action text",
-  "primary_keyword": "primary SEO keyword used",
-  "authority_signal": "authority or credibility claim",
-  "hook_stat": "key statistic in the hook"
+export function frameworkExtractionKeys(fw: string): string[] {
+  switch (fw) {
+    case "Step-by-step":
+      return [
+        "headline", "hook", "tldr",
+        "step_1_title", "step_1_desc", "step_1_mistake",
+        "step_2_title", "step_2_desc", "step_2_mistake",
+        "step_3_title", "step_3_desc", "step_3_mistake",
+        "step_4_title", "step_4_desc", "step_4_mistake",
+        "step_5_title", "step_5_desc", "step_5_mistake",
+        "tools_section", "cta", "primary_keyword",
+      ];
+    case "Loop / cycle":
+      return [
+        "headline", "hook", "tldr", "loop_name", "trigger",
+        "phase_1_name", "phase_1_output",
+        "phase_2_name", "phase_2_output",
+        "phase_3_name", "phase_3_output",
+        "phase_4_name", "phase_4_output",
+        "cta", "primary_keyword",
+      ];
+    case "Matrix / scoring":
+      return [
+        "headline", "hook", "tldr", "matrix_name",
+        "criterion_1", "criterion_2", "criterion_3", "criterion_4",
+        "scoring_mechanism", "result_tiers",
+        "cta", "primary_keyword",
+      ];
+    case "Before / after":
+      return [
+        "headline", "hook", "tldr",
+        "before_state", "turning_point", "after_state", "measurable_proof", "replication_steps",
+        "cta", "primary_keyword",
+      ];
+    case "3-Pillar system":
+    default:
+      return [
+        "headline", "hook", "tldr", "framework_name",
+        "pillar_1", "pillar_2", "pillar_3",
+        "action_step_1", "action_step_2", "action_step_3",
+        "case_study_industry", "case_study_outcome",
+        "faq_1", "faq_2",
+        "cta", "primary_keyword", "hook_stat",
+      ];
+  }
 }
+
+export function buildExtractionPrompt(article: string, framework = "3-Pillar system"): string {
+  const keys = frameworkExtractionKeys(framework);
+  const shape = "{\n" + keys.map(k => `  "${k}": ""`).join(",\n") + "\n}";
+  return `You are a content extraction engine. The article below was written using the "${framework}" framework. Extract the elements specific to that framework.
+
+Return ONLY a valid JSON object with no markdown, no preamble, no explanation. Use these exact keys:
+
+${shape}
 
 If any element is not clearly present, use an empty string "".
 
@@ -86,8 +176,9 @@ ARTICLE:
 ${article}`;
 }
 
-function ex(extraction: Extraction, k: string, fallback = "") {
-  return extraction?.[k] || fallback;
+function ex(extraction: Extraction, k: string, fallback = ""): string {
+  const v = extraction?.[k];
+  return (typeof v === "string" ? v : "") || fallback;
 }
 
 function sharedBrief(b: Brief, e: Extraction): string {

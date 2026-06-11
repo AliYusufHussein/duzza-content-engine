@@ -104,12 +104,24 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
     finally { setAutofilling(false); }
   };
 
+  const stripMetadata = (raw: string): string => {
+    const patterns = [
+      /word count:/i, /checklist sign-off/i, /headline options/i, /meta description:/i,
+      /url slug:/i, /social hooks/i, /completion report/i, /cta confirmed/i, /message angle/i,
+    ];
+    return raw
+      .split("\n")
+      .filter((line) => !patterns.some((p) => p.test(line)))
+      .join("\n");
+  };
+
   const onExtract = async () => {
     const cred = await ensureKey();
     if (!cred) return;
     setExtracting(true);
     try {
-      const j = await callGeminiJSON(cred.key, cred.model, buildExtractionPrompt(article), 2500);
+      const cleaned = stripMetadata(article);
+      const j = await callGeminiJSON(cred.key, cred.model, buildExtractionPrompt(cleaned, brief.fwstyle), 2500);
       setExtraction(j);
     } catch (e: any) { alert(e.message); }
     finally { setExtracting(false); }
@@ -174,19 +186,85 @@ Return ONLY a JSON object (no markdown, no preamble) with these exact keys:
     }
   };
 
+  const buildFrameworkElements = (fw: string, e: any) => {
+    const get = (k: string) => (typeof e?.[k] === "string" ? e[k] : "") || "";
+    switch (fw) {
+      case "Step-by-step": {
+        const steps = [1, 2, 3, 4, 5].map((i) => ({
+          title: get(`step_${i}_title`),
+          description: get(`step_${i}_desc`),
+          mistake: get(`step_${i}_mistake`),
+        })).filter((s) => s.title || s.description);
+        return { steps, tools_section: get("tools_section") };
+      }
+      case "Loop / cycle": {
+        const phases = [1, 2, 3, 4].map((i) => ({
+          name: get(`phase_${i}_name`),
+          output: get(`phase_${i}_output`),
+        })).filter((p) => p.name || p.output);
+        return { loop_name: get("loop_name"), trigger: get("trigger"), phases };
+      }
+      case "Matrix / scoring": {
+        const criteria = [1, 2, 3, 4].map((i) => get(`criterion_${i}`)).filter(Boolean);
+        return {
+          matrix_name: get("matrix_name"),
+          criteria,
+          scoring_mechanism: get("scoring_mechanism"),
+          result_tiers: get("result_tiers"),
+        };
+      }
+      case "Before / after":
+        return {
+          before_state: get("before_state"),
+          turning_point: get("turning_point"),
+          after_state: get("after_state"),
+          measurable_proof: get("measurable_proof"),
+          replication_steps: get("replication_steps"),
+        };
+      case "3-Pillar system":
+      default: {
+        const pillars = [1, 2, 3].map((i) => ({
+          name: get(`pillar_${i}`),
+          action: get(`action_step_${i}`),
+        })).filter((p) => p.name || p.action);
+        return {
+          pillars,
+          case_study: { industry: get("case_study_industry"), outcome: get("case_study_outcome") },
+          faqs: [get("faq_1"), get("faq_2")].filter(Boolean),
+        };
+      }
+    }
+  };
+
   const sendToPolisher = async () => {
     setSending(true);
     try {
       const id = await persistCampaign("done");
       const selectedMedia = media.filter((m) => m.selected).map((m) => ({ slot: m.slot, url: m.url, prompt: m.prompt }));
+      const ex: any = extraction || {};
+      const get = (k: string) => (typeof ex[k] === "string" ? ex[k] : "") || "";
+      const firstMediaUrl = selectedMedia[0]?.url || null;
       const { error } = await supabase.functions.invoke("send-to-polisher", {
         body: {
           campaign_id: id,
           article,
           extraction,
-          title: brief.topic || "Untitled",
+          title: get("headline") || brief.topic || "Untitled",
           status: "ready_for_polishing",
           media: selectedMedia,
+          // New enriched fields
+          channel: brief.channel || "",
+          tone_profile: brief.toneProfile || null,
+          content_goal: brief.content_goal || "",
+          framework: brief.fwstyle,
+          hook: get("hook"),
+          framework_name: get("framework_name") || brief.fwstyle,
+          elements: buildFrameworkElements(brief.fwstyle, ex),
+          cta: get("cta"),
+          keyword: get("primary_keyword") || brief.kw1,
+          hook_stat: get("hook_stat") || brief.stat,
+          content: article,
+          image_url: firstMediaUrl,
         },
       });
       if (error) throw error;
