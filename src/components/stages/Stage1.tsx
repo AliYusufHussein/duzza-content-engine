@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Brief } from "@/lib/campaign-types";
 import { Sparkles } from "lucide-react";
+import { scheduler } from "@/integrations/scheduler/client";
 
 const TONES = ["Authoritative", "Conversational", "Educational", "Data-driven", "Storytelling", "Contrarian"];
 const FW = ["3-Pillar system", "Step-by-step", "Loop / cycle", "Matrix / scoring", "Before / after"];
@@ -19,6 +20,9 @@ export function Stage1({
   autofilling: boolean;
 }) {
   const [filled, setFilled] = useState(false);
+  const [channels, setChannels] = useState<{ id: string; brand: string }[]>([]);
+  const [toneLoading, setToneLoading] = useState(false);
+  const [toneMissing, setToneMissing] = useState(false);
   const set = (k: keyof Brief, v: any) => setBrief({ ...brief, [k]: v });
   const toggleArr = (k: "extras", v: string) => {
     const cur = brief[k];
@@ -29,6 +33,42 @@ export function Stage1({
     setFilled(true);
     setTimeout(() => setFilled(false), 4000);
   };
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await scheduler.from("channels").select("id, brand");
+      if (!data) return;
+      const seen = new Set<string>();
+      const dedup: { id: string; brand: string }[] = [];
+      for (const r of data as any[]) {
+        const b = r.brand ?? r.name ?? "";
+        if (!b || seen.has(b)) continue;
+        seen.add(b);
+        dedup.push({ id: r.id, brand: b });
+      }
+      setChannels(dedup);
+    })();
+  }, []);
+
+  const onChannelChange = async (channelId: string) => {
+    const ch = channels.find((c) => c.id === channelId);
+    if (!ch) {
+      setBrief({ ...brief, channel: "", toneProfile: null });
+      setToneMissing(false);
+      return;
+    }
+    setToneLoading(true);
+    setToneMissing(false);
+    const { data } = await scheduler
+      .from("tone_profiles")
+      .select("*")
+      .eq("channel_id", channelId)
+      .maybeSingle();
+    setToneLoading(false);
+    if (!data) setToneMissing(true);
+    setBrief({ ...brief, channel: ch.brand, toneProfile: data ?? null });
+  };
+
 
   return (
     <div className="space-y-6">
