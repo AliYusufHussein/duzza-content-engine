@@ -5,10 +5,32 @@ import { scheduler } from "@/integrations/scheduler/client";
 
 const TONES = ["Authoritative", "Conversational", "Educational", "Data-driven", "Storytelling", "Contrarian"];
 const FW = ["3-Pillar system", "Step-by-step", "Loop / cycle", "Matrix / scoring", "Before / after"];
+const GOALS = ["Educate", "Inspire", "Entertain", "Convert", "Inform"];
 const EXTRAS = [
   "3 headline options", "Meta description", "URL slug", "Checklist sign-off",
   "Social hooks (×5)", "Email subjects (×5)", "Pull quotes (×10)", "Alt text suggestions",
 ];
+
+function categoryToFramework(cat: string): string {
+  const c = (cat || "").toLowerCase();
+  if (c.includes("entertain") || c.includes("film")) return "Before / after";
+  if (c.includes("culture") || c.includes("lifestyle")) return "Before / after";
+  if (c.includes("finance") || c.includes("business")) return "3-Pillar system";
+  if (c.includes("edu")) return "Step-by-step";
+  if (c.includes("mindset") || c.includes("motivat")) return "Loop / cycle";
+  if (c.includes("poet") || c.includes("liter")) return "Loop / cycle";
+  return "";
+}
+
+function categoryToGoal(cat: string): string {
+  const c = (cat || "").toLowerCase();
+  if (c.includes("finance") || c.includes("business")) return "Convert";
+  if (c.includes("edu")) return "Educate";
+  if (c.includes("entertain") || c.includes("film")) return "Entertain";
+  if (c.includes("mindset") || c.includes("motivat")) return "Inspire";
+  if (c.includes("culture") || c.includes("lifestyle")) return "Inform";
+  return "";
+}
 
 export function Stage1({
   brief, setBrief, onAutofill, onNext, autofilling,
@@ -20,7 +42,7 @@ export function Stage1({
   autofilling: boolean;
 }) {
   const [filled, setFilled] = useState(false);
-  const [channels, setChannels] = useState<{ id: string; brand: string }[]>([]);
+  const [channels, setChannels] = useState<{ id: string; brand: string; category?: string }[]>([]);
   const [toneLoading, setToneLoading] = useState(false);
   const [toneMissing, setToneMissing] = useState(false);
   const set = (k: keyof Brief, v: any) => setBrief({ ...brief, [k]: v });
@@ -36,15 +58,15 @@ export function Stage1({
 
   useEffect(() => {
     (async () => {
-      const { data } = await scheduler.from("channels").select("id, brand");
+      const { data } = await scheduler.from("channels").select("id, brand, category");
       if (!data) return;
       const seen = new Set<string>();
-      const dedup: { id: string; brand: string }[] = [];
+      const dedup: { id: string; brand: string; category?: string }[] = [];
       for (const r of data as any[]) {
         const b = r.brand ?? r.name ?? "";
         if (!b || seen.has(b)) continue;
         seen.add(b);
-        dedup.push({ id: r.id, brand: b });
+        dedup.push({ id: r.id, brand: b, category: r.category });
       }
       setChannels(dedup);
     })();
@@ -66,9 +88,18 @@ export function Stage1({
       .maybeSingle();
     setToneLoading(false);
     if (!data) setToneMissing(true);
-    setBrief({ ...brief, channel: ch.brand, toneProfile: data ?? null });
+    const suggestedFw = categoryToFramework(ch.category || "");
+    const suggestedGoal = categoryToGoal(ch.category || "");
+    setBrief({
+      ...brief,
+      channel: ch.brand,
+      toneProfile: data ?? null,
+      fwstyle: suggestedFw || brief.fwstyle,
+      content_goal: suggestedGoal || brief.content_goal,
+    });
   };
 
+  const toneLocked = !!(brief.channel && brief.toneProfile && Array.isArray(brief.toneProfile.tone_keywords) && brief.toneProfile.tone_keywords.length > 0);
 
   return (
     <div className="space-y-6">
@@ -180,14 +211,29 @@ export function Stage1({
 
         <div className="mb-4">
           <label className="ce-label">Tone</label>
-          <div className="flex flex-wrap gap-2">{TONES.map((t) => (
-            <button key={t} className={`ce-chip ${brief.tone === t ? "on" : ""}`} onClick={() => set("tone", t)}>{t}</button>
-          ))}</div>
+          {toneLocked ? (
+            <div className="flex flex-wrap gap-2">
+              {brief.toneProfile.tone_keywords.map((k: string) => (
+                <span key={k} className="ce-chip on">{k}</span>
+              ))}
+              <span className="text-[11px] font-mono-ui text-[var(--text-faint)] self-center ml-2">from channel tone profile</span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">{TONES.map((t) => (
+              <button key={t} className={`ce-chip ${brief.tone === t ? "on" : ""}`} onClick={() => set("tone", t)}>{t}</button>
+            ))}</div>
+          )}
         </div>
-        <div>
+        <div className="mb-4">
           <label className="ce-label">Named framework style</label>
           <div className="flex flex-wrap gap-2">{FW.map((t) => (
             <button key={t} className={`ce-chip ${brief.fwstyle === t ? "on" : ""}`} onClick={() => set("fwstyle", t)}>{t}</button>
+          ))}</div>
+        </div>
+        <div>
+          <label className="ce-label">Content goal</label>
+          <div className="flex flex-wrap gap-2">{GOALS.map((g) => (
+            <button key={g} className={`ce-chip ${brief.content_goal === g ? "on" : ""}`} onClick={() => set("content_goal", g)}>{g}</button>
           ))}</div>
         </div>
       </div>
