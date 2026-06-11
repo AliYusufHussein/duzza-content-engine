@@ -81,6 +81,60 @@ export function Stage1({
       </div>
 
       <div className="ce-card">
+        <div className="ce-card-title">Channel</div>
+        <label className="ce-label">Channel</label>
+        <select
+          className="ce-input"
+          value={channels.find((c) => c.brand === brief.channel)?.id ?? ""}
+          onChange={(e) => onChannelChange(e.target.value)}
+        >
+          <option value="">Select a channel...</option>
+          {channels.map((c) => (
+            <option key={c.id} value={c.id}>{c.brand}</option>
+          ))}
+        </select>
+
+        {brief.channel && (
+          <div className="mt-4">
+            <label className="ce-label">Tone</label>
+            {toneLoading ? (
+              <div className="text-[12px] font-mono-ui text-[var(--text-muted)] flex items-center gap-2">
+                <span className="ce-spinner" /> Loading tone profile…
+              </div>
+            ) : toneMissing || !brief.toneProfile ? (
+              <div className="text-[12px] font-mono-ui text-[var(--text-muted)]">No tone profile set</div>
+            ) : (
+              <div className="space-y-3 p-3 rounded border border-[var(--border)] bg-[var(--surface)]">
+                {brief.toneProfile.brand_voice && (
+                  <div>
+                    <div className="ce-label">Brand voice</div>
+                    <div className="text-sm">{brief.toneProfile.brand_voice}</div>
+                  </div>
+                )}
+                {Array.isArray(brief.toneProfile.tone_keywords) && brief.toneProfile.tone_keywords.length > 0 && (
+                  <div>
+                    <div className="ce-label">Tone keywords</div>
+                    <div className="flex flex-wrap gap-2">
+                      {brief.toneProfile.tone_keywords.map((k: string) => (
+                        <span key={k} className="ce-chip on">{k}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {brief.toneProfile.sample_line && (
+                  <div>
+                    <div className="ce-label">Sample line</div>
+                    <div className="text-sm italic">"{brief.toneProfile.sample_line}"</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+
+      <div className="ce-card">
         <div className="ce-card-title">Start here</div>
         <label className="ce-label">Topic / article subject</label>
         <div className="flex gap-2">
